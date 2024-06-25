@@ -155,22 +155,24 @@ def get_network(args):
     elif args.net == 'vit':
         from vit_pytorch import ViT
         net = ViT(
-            image_size = 128,
+            image_size = 224,
             patch_size = 16,
             num_classes = 100,
             dim = 512,
             depth = 4,
             heads = 12,
             mlp_dim = 1024,
-            dropout = 0.3,
-            emb_dropout = 0.3
+            dropout = 0.1,
+            emb_dropout = 0.1
         )
     else:
         print('the network name you have entered is not supported yet')
         sys.exit()
 
     if args.gpu: #use_gpu
-        net = net.cuda()
+        # net = net.cuda()
+        device = torch.device('cuda:0')
+        net = net.to(device)
 
     return net
 
@@ -192,7 +194,7 @@ def get_training_dataloader(mean, std, batch_size=16, num_workers=2, shuffle=Tru
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
         transforms.RandomRotation(15),
-        transforms.Resize(128),
+        transforms.Resize(224),
         transforms.ToTensor(),
         transforms.Normalize(mean, std)
     ])
@@ -216,7 +218,7 @@ def get_test_dataloader(mean, std, batch_size=16, num_workers=2, shuffle=True):
     """
 
     transform_test = transforms.Compose([
-        transforms.Resize(128),
+        transforms.Resize(224),
         transforms.ToTensor(),
         transforms.Normalize(mean, std)
     ])

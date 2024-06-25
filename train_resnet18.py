@@ -145,8 +145,9 @@ if __name__ == '__main__':
     num_ftrs = net.fc.in_features
     net.fc = nn.Sequential(
         nn.Linear(num_ftrs, 100),
-        nn.Dropout(0.5),
+        nn.Dropout(0.2),
     )
+    net = net.to(device)
 
     num_params = count_parameters(net)
     print(f'The cnn model has {num_params:,} trainable parameters')
