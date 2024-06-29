@@ -27,6 +27,42 @@ from utils import get_network, get_training_dataloader, get_test_dataloader, War
     most_recent_folder, most_recent_weights, last_epoch, best_acc_weights, count_parameters
 
 device = torch.device('cuda:0')
+
+def cutmix_data(x, y, alpha=1.0):
+    """Returns mixed inputs, pairs of targets, and lambda"""
+    if alpha > 0:
+        lam = np.random.beta(alpha, alpha)
+    else:
+        lam = 1
+
+    batch_size = x.size()[0]
+    index = torch.randperm(batch_size)
+
+    y_a, y_b = y, y[index]
+    bbx1, bby1, bbx2, bby2 = rand_bbox(x.size(), lam)
+    x[:, :, bbx1:bbx2, bby1:bby2] = x[index, :, bbx1:bbx2, bby1:bby2]
+
+    return x, y_a, y_b, lam
+
+def rand_bbox(size, lam):
+    W = size[2]
+    H = size[3]
+    cut_rat = np.sqrt(1. - lam)
+    cut_w = np.int(W * cut_rat)
+    cut_h = np.int(H * cut_rat)
+
+    cx = np.random.randint(W)
+    cy = np.random.randint(H)
+
+    bbx1 = np.clip(cx - cut_w // 2, 0, W)
+    bby1 = np.clip(cy - cut_h // 2, 0, H)
+    bbx2 = np.clip(cx + cut_w // 2, 0, W)
+    bby2 = np.clip(cy + cut_h // 2, 0, H)
+
+    return bbx1, bby1, bbx2, bby2
+
+
+
 def train(epoch, tb=True):
 
     start = time.time()
@@ -40,10 +76,11 @@ def train(epoch, tb=True):
         if args.gpu:
             labels = labels.to(device)
             images = images.to(device)
-
+        inputs, targets_a, targets_b, lam = cutmix_data(images, labels, 1)
         optimizer.zero_grad()
-        outputs = net(images)
-        loss = loss_function(outputs, labels)
+        outputs = net(inputs)
+        # loss = loss_function(outputs, labels)
+        loss = lam * loss_function(outputs, targets_a) + (1 - lam) * loss_function(outputs, targets_b)
         loss.backward()
         optimizer.step()
 
@@ -101,7 +138,8 @@ def eval_training(epoch=0, tb=True):
         if args.gpu:
             images = images.to(device)
             labels = labels.to(device)
-
+        # 
+        # inputs, targets_a, targets_b = map(lambda x: x.to(device), (inputs, targets_a, targets_b))
         outputs = net(images)
         loss = loss_function(outputs, labels)
 

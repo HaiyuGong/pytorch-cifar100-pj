@@ -158,10 +158,10 @@ def get_network(args):
             image_size = 224,
             patch_size = 16,
             num_classes = 100,
-            dim = 512,
-            depth = 4,
+            dim = 256,
+            depth = 12,
             heads = 12,
-            mlp_dim = 1024,
+            mlp_dim = 512,
             dropout = 0.1,
             emb_dropout = 0.1
         )
