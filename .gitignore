@@ -2,3 +2,8 @@
 data
 checkpoint
 saved_models
+saved_models2
+test.py
+train_resnet18.py
+train_vit.py
+utils.py

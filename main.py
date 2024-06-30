@@ -10,20 +10,20 @@ import os
 import time
 from torchvision.models import resnet18
 import numpy as np
-
+from vit_pytorch import ViT
 # from models import SimCLR
 
 # 设置数据路径
-batch_size = 64
-dropout = 0.5
+batch_size = 128
+dropout = 0
 pretrained = 0
 optm = "adam"
 
 cutmix = 1
-num_epochs = 300
-lr = 0.0005
+num_epochs = 200
+lr = 0.0002
 lrsch = 1
-model_name = "vit"  # resnet18, vit
+model_name = "resnet18"  # resnet18, vit
 
 device = torch.device("cuda:1")
 
@@ -105,7 +105,6 @@ if model_name == "resnet18":
         nn.Dropout(dropout),
     )
 elif model_name == "vit":
-    from vit_pytorch import ViT
     model = ViT(
         image_size = 224,
         patch_size = 16,
@@ -114,8 +113,8 @@ elif model_name == "vit":
         depth = 12,
         heads = 12,
         mlp_dim = 512,
-        dropout = 0.1,
-        emb_dropout = 0.1
+        dropout = dropout,
+        emb_dropout = dropout
     )
 num_params = count_parameters(model)
 print(f'The {model_name} model has {num_params:,} trainable parameters')
@@ -134,7 +133,7 @@ scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.2)
 # 创建TensorBoard SummaryWriter
 suffix_num = timestamp_str = str(int(time.time()))[-6:]
 writer = SummaryWriter(
-    log_dir=f'runs2/{model_name}_pretrained{pretrained}_lr{lr}_epoch{num_epochs}_cutmix{cutmix}_{optm}_lrsch{lrsch}_{suffix_num}')
+    log_dir=f'runs/{model_name}_pretrained{pretrained}_lr{lr}_epoch{num_epochs}_cutmix{cutmix}_dropout{dropout}_lrsch{lrsch}_{suffix_num}')
 
 model = model.to(device)
 
@@ -195,6 +194,6 @@ for epoch in range(num_epochs):
         best_acc = test_accuracy
         if (pretrained and best_acc > 0.75) or (not pretrained and best_acc > 0.6):
             torch.save(model.state_dict(),
-                       f'saved_models/resnet18_pretrained{pretrained}_lr{lr}_epoch{num_epochs}_dropout{dropout}_cutmix{cutmix}_acc{best_acc:.6f}.pth')
+                       f'saved_models/{model_name}_pretrained{pretrained}_lr{lr}_epoch{num_epochs}_dropout{dropout}_cutmix{cutmix}_acc{best_acc:.6f}.pth')
 
 writer.close()
